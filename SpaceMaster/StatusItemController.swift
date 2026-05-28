@@ -7,6 +7,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         static let unavailableTitle = "Spaces"
         static let renameMenuTitle = "Rename Current Space..."
         static let menuActionDelay = 0.15
+        static let autoNameRefreshDelays: [TimeInterval] = [0.2, 0.35, 0.5]
     }
 
     private struct RenameTarget {
@@ -14,11 +15,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let spaceNumber: Int
     }
 
-    private let aliasStore = SpaceAliasStore()
+    private let manualAliasStore = SpaceAliasStore(kind: .manual)
+    private let automaticAliasStore = SpaceAliasStore(kind: .automatic)
+    private let fullScreenSpaceNameDetector = FullScreenSpaceNameDetector()
     private let spaceSwitcher: SpaceSwitching
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let workspaceNotificationCenter = NSWorkspace.shared.notificationCenter
+    private var autoNameRefreshGeneration = 0
 
     init(spaceSwitcher: SpaceSwitching) {
         self.spaceSwitcher = spaceSwitcher
@@ -28,6 +32,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         configureStatusItem()
         startObservingSystemChanges()
         rebuildMenu()
+        scheduleAutomaticNameRefresh()
     }
 
     deinit {
@@ -53,14 +58,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func startObservingSystemChanges() {
         workspaceNotificationCenter.addObserver(
             self,
-            selector: #selector(handleSystemStateChange),
+            selector: #selector(handleActiveSpaceDidChange),
             name: NSWorkspace.activeSpaceDidChangeNotification,
             object: nil
         )
 
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(handleSystemStateChange),
+            selector: #selector(handleApplicationDidBecomeActive),
             name: NSApplication.didBecomeActiveNotification,
             object: nil
         )
@@ -157,11 +162,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func spaceTitle(for space: MenubarSpace?, spaceNumber: Int) -> String {
-        guard let space else {
+        displayTitle(for: space?.identity, spaceNumber: spaceNumber)
+    }
+
+    private func displayTitle(for identity: MenubarSpaceIdentity?, spaceNumber: Int) -> String {
+        guard let identity else {
             return defaultSpaceTitle(for: spaceNumber)
         }
 
-        return aliasStore.alias(for: space.identity) ?? defaultSpaceTitle(for: spaceNumber)
+        return manualAliasStore.alias(for: identity)
+            ?? automaticAliasStore.alias(for: identity)
+            ?? defaultSpaceTitle(for: spaceNumber)
     }
 
     private func defaultSpaceTitle(for spaceNumber: Int) -> String {
@@ -184,15 +195,15 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func presentRenamePrompt(for target: RenameTarget) {
         let alert = NSAlert()
-        alert.messageText = "Rename \(defaultSpaceTitle(for: target.spaceNumber))"
+        alert.messageText = "Rename \(displayTitle(for: target.identity, spaceNumber: target.spaceNumber))"
         alert.informativeText = "Enter a custom name for this space. Leave it blank to clear the alias."
         alert.alertStyle = .informational
         alert.addButton(withTitle: "Save")
         alert.addButton(withTitle: "Cancel")
 
         let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
-        textField.placeholderString = defaultSpaceTitle(for: target.spaceNumber)
-        textField.stringValue = aliasStore.alias(for: target.identity) ?? ""
+        textField.placeholderString = displayTitle(for: target.identity, spaceNumber: target.spaceNumber)
+        textField.stringValue = manualAliasStore.alias(for: target.identity) ?? ""
         alert.accessoryView = textField
         alert.window.initialFirstResponder = textField
 
@@ -201,7 +212,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let alias = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        aliasStore.setAlias(alias.isEmpty ? nil : alias, for: target.identity)
+        manualAliasStore.setAlias(alias.isEmpty ? nil : alias, for: target.identity)
         rebuildMenu()
     }
 
@@ -254,15 +265,78 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         spaceSwitcher.requestAccessibilityPermission()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.rebuildMenu()
+            self?.scheduleAutomaticNameRefresh()
         }
     }
 
-    @objc private func handleSystemStateChange() {
+    private func scheduleAutomaticNameRefresh() {
+        autoNameRefreshGeneration += 1
+
+        guard spaceSwitcher.isAccessibilityTrusted else {
+            return
+        }
+
+        scheduleAutomaticNameRefreshAttempt(
+            at: 0,
+            generation: autoNameRefreshGeneration
+        )
+    }
+
+    private func scheduleAutomaticNameRefreshAttempt(at attemptIndex: Int, generation: Int) {
+        guard Constants.autoNameRefreshDelays.indices.contains(attemptIndex) else {
+            return
+        }
+
+        let delay = Constants.autoNameRefreshDelays[attemptIndex]
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, self.autoNameRefreshGeneration == generation else {
+                return
+            }
+
+            switch self.refreshAutomaticNameForCurrentSpace() {
+            case .updated:
+                self.rebuildMenu()
+            case .retryNeeded:
+                self.scheduleAutomaticNameRefreshAttempt(
+                    at: attemptIndex + 1,
+                    generation: generation
+                )
+            case .unchanged:
+                break
+            }
+        }
+    }
+
+    private func refreshAutomaticNameForCurrentSpace() -> AutomaticNameRefreshResult {
+        guard let snapshot = spaceSwitcher.menubarSnapshot(),
+              let currentSpace = snapshot.currentSpace else {
+            return .retryNeeded
+        }
+
+        switch fullScreenSpaceNameDetector.detectCurrentFullScreenAppName() {
+        case .fullScreenApp(let name):
+            let didChange = automaticAliasStore.setAlias(name, for: currentSpace.identity)
+            return didChange ? .updated : .unchanged
+        case .notFullScreen:
+            let didChange = automaticAliasStore.setAlias(nil, for: currentSpace.identity)
+            return didChange ? .updated : .unchanged
+        case .unavailable:
+            return .retryNeeded
+        }
+    }
+
+    @objc private func handleActiveSpaceDidChange() {
+        rebuildMenu()
+        scheduleAutomaticNameRefresh()
+    }
+
+    @objc private func handleApplicationDidBecomeActive() {
         rebuildMenu()
     }
 
     @objc private func refresh() {
         rebuildMenu()
+        scheduleAutomaticNameRefresh()
     }
 
     @objc private func quit() {
@@ -271,37 +345,57 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 }
 
 private final class SpaceAliasStore {
+    enum Kind {
+        case manual
+        case automatic
+    }
+
     private enum Keys {
-        static let aliases = "spaceAliasesByStableID"
+        static let manualAliases = "spaceAliasesByStableID"
+        static let automaticAliases = "spaceAutomaticAliasesByStableID"
         static let legacyNumberedAliases = "spaceAliases"
     }
 
+    private let kind: Kind
     private let defaults: UserDefaults
 
-    init(defaults: UserDefaults = .standard) {
+    init(kind: Kind, defaults: UserDefaults = .standard) {
+        self.kind = kind
         self.defaults = defaults
-        clearLegacyAliasesIfNeeded()
+
+        if kind == .manual {
+            clearLegacyAliasesIfNeeded()
+        }
     }
 
     func alias(for identity: MenubarSpaceIdentity) -> String? {
         aliases()[identity.aliasKey]
     }
 
-    func setAlias(_ alias: String?, for identity: MenubarSpaceIdentity) {
+    @discardableResult
+    func setAlias(_ alias: String?, for identity: MenubarSpaceIdentity) -> Bool {
+        let normalizedAlias = alias?.trimmingCharacters(in: .whitespacesAndNewlines)
         var updatedAliases = aliases()
         let key = identity.aliasKey
+        let resolvedAlias = normalizedAlias?.isEmpty == false ? normalizedAlias : nil
 
-        if let alias {
-            updatedAliases[key] = alias
+        if updatedAliases[key] == resolvedAlias {
+            return false
+        }
+
+        if let resolvedAlias {
+            updatedAliases[key] = resolvedAlias
         } else {
             updatedAliases.removeValue(forKey: key)
         }
 
         if updatedAliases.isEmpty {
-            defaults.removeObject(forKey: Keys.aliases)
+            defaults.removeObject(forKey: aliasesKey)
         } else {
-            defaults.set(updatedAliases, forKey: Keys.aliases)
+            defaults.set(updatedAliases, forKey: aliasesKey)
         }
+
+        return true
     }
 
     private func clearLegacyAliasesIfNeeded() {
@@ -313,6 +407,21 @@ private final class SpaceAliasStore {
     }
 
     private func aliases() -> [String: String] {
-        defaults.dictionary(forKey: Keys.aliases) as? [String: String] ?? [:]
+        defaults.dictionary(forKey: aliasesKey) as? [String: String] ?? [:]
     }
+
+    private var aliasesKey: String {
+        switch kind {
+        case .manual:
+            Keys.manualAliases
+        case .automatic:
+            Keys.automaticAliases
+        }
+    }
+}
+
+private enum AutomaticNameRefreshResult {
+    case updated
+    case unchanged
+    case retryNeeded
 }

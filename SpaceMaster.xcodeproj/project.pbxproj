@@ -13,6 +13,7 @@
 		5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921342FC8748F00A4A501 /* StatusItemController.swift */; };
 		5C3921402FC8748F00A4A501 /* ISS.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921372FC8748F00A4A501 /* ISS.c */; };
 		5C3921412FC8748F00A4A501 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */; };
+		5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		5C3921372FC8748F00A4A501 /* ISS.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ISS.c; sourceTree = "<group>"; };
 		5C3921382FC8748F00A4A501 /* ISS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ISS.h; sourceTree = "<group>"; };
 		5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+		5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenSpaceNameDetector.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -72,6 +74,7 @@
 				5C3921322FC8748F00A4A501 /* SpaceSwitching.swift */,
 				5C3921332FC8748F00A4A501 /* SpaceManager.swift */,
 				5C3921342FC8748F00A4A501 /* StatusItemController.swift */,
+				5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */,
 				5C3921352FC8748F00A4A501 /* SpaceMaster-Bridging-Header.h */,
 				5C3921362FC8748F00A4A501 /* Info.plist */,
 				5C39212F2FC8748F00A4A501 /* ISS */,
@@ -192,6 +195,7 @@
 				5C39213D2FC8748F00A4A501 /* SpaceSwitching.swift in Sources */,
 				5C39213E2FC8748F00A4A501 /* SpaceManager.swift in Sources */,
 				5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */,
+				5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */,
 				5C3921402FC8748F00A4A501 /* ISS.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
