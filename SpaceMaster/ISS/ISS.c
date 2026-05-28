@@ -57,10 +57,16 @@ extern CGSSpaceID CGSGetActiveSpace(CGSConnectionID connection) __attribute__((w
 static CFMachPortRef globalTap = NULL;
 static CFRunLoopSourceRef globalSource = NULL;
 
-static bool extract_space_info_from_display(CFDictionaryRef displayDict,
-                                            CGSSpaceID activeSpace,
-                                            bool hasActiveSpace,
-                                            ISSSpaceInfo *outInfo);
+static bool extract_space_snapshot_from_display(CFDictionaryRef displayDict,
+                                                CGSSpaceID activeSpace,
+                                                bool hasActiveSpace,
+                                                ISSSpaceSnapshot *outSnapshot,
+                                                ISSSpaceSnapshotEntry *outSpaces,
+                                                unsigned int maxSpaces);
+static bool load_space_snapshot_for_display(ISSSpaceSnapshot *outSnapshot,
+                                            ISSSpaceSnapshotEntry *outSpaces,
+                                            unsigned int maxSpaces,
+                                            bool useCursorDisplay);
 static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDisplay);
 static bool iss_post_switch_gesture(ISSDirection direction);
 static bool iss_switch_with_info(const ISSSpaceInfo *info, ISSDirection direction);
@@ -82,11 +88,34 @@ static bool cgs_symbols_available(void) {
            (&CGSCopyManagedDisplaySpaces != NULL);
 }
 
-static bool extract_space_info_from_display(CFDictionaryRef displayDict,
-                                            CGSSpaceID activeSpace,
-                                            bool hasActiveSpace,
-                                            ISSSpaceInfo *outInfo) {
-    if (!displayDict || !outInfo) {
+static void populate_space_uuid(CFDictionaryRef spaceDict, ISSSpaceSnapshotEntry *outSpace) {
+    if (!spaceDict || !outSpace) {
+        return;
+    }
+
+    outSpace->hasUUID = false;
+    outSpace->uuid[0] = '\0';
+
+    CFStringRef uuidString = (CFStringRef)CFDictionaryGetValue(spaceDict, CFSTR("uuid"));
+    if (!uuidString || CFGetTypeID(uuidString) != CFStringGetTypeID() || CFStringGetLength(uuidString) == 0) {
+        return;
+    }
+
+    if (CFStringGetCString(uuidString, outSpace->uuid, sizeof(outSpace->uuid), kCFStringEncodingUTF8)) {
+        outSpace->hasUUID = true;
+        return;
+    }
+
+    outSpace->uuid[0] = '\0';
+}
+
+static bool extract_space_snapshot_from_display(CFDictionaryRef displayDict,
+                                                CGSSpaceID activeSpace,
+                                                bool hasActiveSpace,
+                                                ISSSpaceSnapshot *outSnapshot,
+                                                ISSSpaceSnapshotEntry *outSpaces,
+                                                unsigned int maxSpaces) {
+    if (!displayDict || !outSnapshot) {
         return false;
     }
 
@@ -111,13 +140,13 @@ static bool extract_space_info_from_display(CFDictionaryRef displayDict,
     bool hasTargetActiveSpace = displayActiveSpace != 0 || hasActiveSpace;
 
     CFArrayRef spaces = (CFArrayRef)spacesValue;
-    const CFIndex spaceCount = CFArrayGetCount(spaces);
+    const CFIndex rawSpaceCount = CFArrayGetCount(spaces);
 
     unsigned int totalSpaces = 0;
     unsigned int activeIndex = 0;
     bool foundActive = false;
 
-    for (CFIndex i = 0; i < spaceCount; i++) {
+    for (CFIndex i = 0; i < rawSpaceCount; i++) {
         const void *spaceValue = CFArrayGetValueAtIndex(spaces, i);
         if (!spaceValue || CFGetTypeID(spaceValue) != CFDictionaryGetTypeID()) {
             continue;
@@ -131,6 +160,17 @@ static bool extract_space_info_from_display(CFDictionaryRef displayDict,
 
         CGSSpaceID candidate = 0;
         if (CFNumberGetValue(idNumber, kCFNumberSInt64Type, &candidate)) {
+            if (outSpaces) {
+                if (totalSpaces >= maxSpaces) {
+                    return false;
+                }
+
+                ISSSpaceSnapshotEntry *entry = &outSpaces[totalSpaces];
+                memset(entry, 0, sizeof(*entry));
+                entry->id64 = candidate;
+                populate_space_uuid(spaceDict, entry);
+            }
+
             if (!foundActive && hasTargetActiveSpace && candidate == targetActiveSpace) {
                 activeIndex = totalSpaces;
                 foundActive = true;
@@ -143,12 +183,15 @@ static bool extract_space_info_from_display(CFDictionaryRef displayDict,
         return false;
     }
 
-    outInfo->spaceCount = totalSpaces;
-    outInfo->currentIndex = foundActive ? activeIndex : 0;
+    outSnapshot->spaceCount = totalSpaces;
+    outSnapshot->currentIndex = foundActive ? activeIndex : 0;
     return true;
 }
 
-static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDisplay) {
+static bool load_space_snapshot_for_display(ISSSpaceSnapshot *outSnapshot,
+                                            ISSSpaceSnapshotEntry *outSpaces,
+                                            unsigned int maxSpaces,
+                                            bool useCursorDisplay) {
     if (!cgs_symbols_available()) {
         fprintf(stderr, "ISS: required CGS symbols missing\n");
         return false;
@@ -241,7 +284,14 @@ static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDispla
 
     bool success = false;
     if (targetDisplay) {
-        success = extract_space_info_from_display(targetDisplay, activeSpace, hasActiveSpace, info);
+        success = extract_space_snapshot_from_display(
+            targetDisplay,
+            activeSpace,
+            hasActiveSpace,
+            outSnapshot,
+            outSpaces,
+            maxSpaces
+        );
     }
 
     if (activeDisplayIdentifier) {
@@ -250,6 +300,19 @@ static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDispla
     CFRelease(displays);
 
     return success;
+}
+
+static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDisplay) {
+    ISSSpaceSnapshot snapshot;
+    memset(&snapshot, 0, sizeof(snapshot));
+
+    if (!load_space_snapshot_for_display(&snapshot, NULL, 0, useCursorDisplay)) {
+        return false;
+    }
+
+    info->currentIndex = snapshot.currentIndex;
+    info->spaceCount = snapshot.spaceCount;
+    return true;
 }
 
 static bool iss_should_block_switch(const ISSSpaceInfo *info, ISSDirection direction) {
@@ -400,6 +463,26 @@ bool iss_get_menubar_space_info(ISSSpaceInfo *info) {
 
     memset(info, 0, sizeof(*info));
     return load_space_info_for_display(info, false);
+}
+
+bool iss_copy_menubar_space_snapshot(ISSSpaceSnapshot *outSnapshot,
+                                     ISSSpaceSnapshotEntry *outSpaces,
+                                     unsigned int maxSpaces) {
+    if (!outSnapshot || !outSpaces || maxSpaces == 0) {
+        return false;
+    }
+
+    memset(outSnapshot, 0, sizeof(*outSnapshot));
+    memset(outSpaces, 0, sizeof(*outSpaces) * maxSpaces);
+    return load_space_snapshot_for_display(outSnapshot, outSpaces, maxSpaces, false);
+}
+
+const char *iss_space_snapshot_entry_uuid(const ISSSpaceSnapshotEntry *space) {
+    if (!space || !space->hasUUID || space->uuid[0] == '\0') {
+        return NULL;
+    }
+
+    return space->uuid;
 }
 
 bool iss_get_space_count_for_uuid(const char *uuidCStr, unsigned int *outCount) {

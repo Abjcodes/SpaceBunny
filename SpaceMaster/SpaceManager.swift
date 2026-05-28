@@ -3,6 +3,10 @@ import Foundation
 
 @MainActor
 final class SpaceManager: SpaceSwitching {
+    private enum Constants {
+        static let snapshotCapacity = Int(ISSSpaceSnapshotMaxEntries)
+    }
+
     private var initialized = false
 
     var isAccessibilityTrusted: Bool {
@@ -25,13 +29,39 @@ final class SpaceManager: SpaceSwitching {
         _ = AXIsProcessTrustedWithOptions(options)
     }
 
-    func spaceInfo() -> (currentIndex: Int, spaceCount: Int)? {
-        var info = ISSSpaceInfo()
-        guard iss_get_menubar_space_info(&info), info.spaceCount > 0 else {
+    func menubarSnapshot() -> MenubarSpaceSnapshot? {
+        var snapshot = ISSSpaceSnapshot()
+        let entries = UnsafeMutablePointer<ISSSpaceSnapshotEntry>.allocate(capacity: Constants.snapshotCapacity)
+        defer { entries.deallocate() }
+
+        guard iss_copy_menubar_space_snapshot(
+            &snapshot,
+            entries,
+            UInt32(Constants.snapshotCapacity)
+        ), snapshot.spaceCount > 0 else {
             return nil
         }
 
-        return (Int(info.currentIndex), Int(info.spaceCount))
+        var spaces: [MenubarSpace] = []
+        spaces.reserveCapacity(Int(snapshot.spaceCount))
+
+        for index in 0..<Int(snapshot.spaceCount) {
+            let entry = entries[index]
+            let identity = MenubarSpaceIdentity(
+                uuid: entry.uuidString,
+                id64: UInt64(entry.id64)
+            )
+            spaces.append(MenubarSpace(identity: identity))
+        }
+
+        guard spaces.indices.contains(Int(snapshot.currentIndex)) else {
+            return nil
+        }
+
+        return MenubarSpaceSnapshot(
+            currentIndex: Int(snapshot.currentIndex),
+            spaces: spaces
+        )
     }
 
     func cursorSpaceInfo() -> (currentIndex: Int, spaceCount: Int)? {
@@ -85,5 +115,17 @@ final class SpaceManager: SpaceSwitching {
         let primaryHeight = screens.first?.frame.height ?? screen.frame.height
         let center = CGPoint(x: screen.frame.midX, y: primaryHeight - screen.frame.midY)
         CGWarpMouseCursorPosition(center)
+    }
+}
+
+private extension ISSSpaceSnapshotEntry {
+    var uuidString: String? {
+        withUnsafePointer(to: self) { entryPointer in
+            guard let uuidCString = iss_space_snapshot_entry_uuid(entryPointer) else {
+                return nil
+            }
+
+            return String(cString: uuidCString)
+        }
     }
 }

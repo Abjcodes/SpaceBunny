@@ -2,6 +2,12 @@
 #define ISS_h
 
 #include <stdbool.h>
+#include <stdint.h>
+
+enum {
+    ISSSpaceSnapshotMaxEntries = 128,
+    ISSSpaceUUIDBufferLength = 37
+};
 
 /** @brief Initialize resources
  * @return true on success, false on failure
@@ -26,6 +32,23 @@ typedef struct {
 } ISSSpaceInfo;
 
 /**
+ * @brief Describes one visible user space in the current snapshot.
+ */
+typedef struct {
+    uint64_t id64;                             /**< Stable space id exposed by CGS */
+    bool hasUUID;                              /**< Whether uuid contains a non-empty value */
+    char uuid[ISSSpaceUUIDBufferLength];       /**< Null-terminated space UUID when present */
+} ISSSpaceSnapshotEntry;
+
+/**
+ * @brief Describes the ordered visible spaces for a display snapshot.
+ */
+typedef struct {
+    unsigned int currentIndex; /**< Zero-based index of the active space */
+    unsigned int spaceCount;   /**< Total number of visible spaces in the snapshot */
+} ISSSpaceSnapshot;
+
+/**
  * @brief Performs the space switch if the requested move is within bounds.
  * @param direction The direction to switch spaces towards
  * @return true if the switch was posted, false if blocked by bounds or errors
@@ -45,6 +68,24 @@ bool iss_get_space_info(ISSSpaceInfo *info);
  * @return true on success, false if unavailable (e.g. API failure)
  */
 bool iss_get_menubar_space_info(ISSSpaceInfo *info);
+
+/**
+ * @brief Copies the visible spaces for the active menu-bar display from a single CGS snapshot.
+ * @param outSnapshot Output pointer receiving currentIndex and spaceCount.
+ * @param outSpaces Caller-provided buffer that receives ordered visible spaces.
+ * @param maxSpaces Capacity of outSpaces.
+ * @return true on success, false if unavailable or the provided buffer is too small.
+ */
+bool iss_copy_menubar_space_snapshot(ISSSpaceSnapshot *outSnapshot,
+                                     ISSSpaceSnapshotEntry *outSpaces,
+                                     unsigned int maxSpaces);
+
+/**
+ * @brief Returns the UUID c-string for a snapshot entry when present.
+ * @param space Snapshot entry.
+ * @return Null when the entry has no UUID.
+ */
+const char *iss_space_snapshot_entry_uuid(const ISSSpaceSnapshotEntry *space);
 
 /**
  * @brief Determines if a move in the given direction is allowed for the info.
