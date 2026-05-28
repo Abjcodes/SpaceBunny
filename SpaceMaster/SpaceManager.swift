@@ -30,15 +30,33 @@ final class SpaceManager: SpaceSwitching {
     }
 
     func menubarSnapshot() -> MenubarSpaceSnapshot? {
+        snapshot(useCursorDisplay: false)
+    }
+
+    func cursorSnapshot() -> MenubarSpaceSnapshot? {
+        snapshot(useCursorDisplay: true)
+    }
+
+    private func snapshot(useCursorDisplay: Bool) -> MenubarSpaceSnapshot? {
         var snapshot = ISSSpaceSnapshot()
         let entries = UnsafeMutablePointer<ISSSpaceSnapshotEntry>.allocate(capacity: Constants.snapshotCapacity)
         defer { entries.deallocate() }
 
-        guard iss_copy_menubar_space_snapshot(
-            &snapshot,
-            entries,
-            UInt32(Constants.snapshotCapacity)
-        ), snapshot.spaceCount > 0 else {
+        let didCopySnapshot = if useCursorDisplay {
+            iss_copy_cursor_space_snapshot(
+                &snapshot,
+                entries,
+                UInt32(Constants.snapshotCapacity)
+            )
+        } else {
+            iss_copy_menubar_space_snapshot(
+                &snapshot,
+                entries,
+                UInt32(Constants.snapshotCapacity)
+            )
+        }
+
+        guard didCopySnapshot, snapshot.spaceCount > 0 else {
             return nil
         }
 
@@ -94,7 +112,7 @@ final class SpaceManager: SpaceSwitching {
         }
         guard ensureInitialized() else { return false }
 
-        activateScreen(screenIndex)
+        _ = screenIndex
         return iss_switch_to_index(UInt32(spaceNumber - 1))
     }
 
@@ -105,16 +123,6 @@ final class SpaceManager: SpaceSwitching {
 
         initialized = iss_init()
         return initialized
-    }
-
-    private func activateScreen(_ screenIndex: Int) {
-        let screens = NSScreen.screens
-        guard screens.indices.contains(screenIndex) else { return }
-
-        let screen = screens[screenIndex]
-        let primaryHeight = screens.first?.frame.height ?? screen.frame.height
-        let center = CGPoint(x: screen.frame.midX, y: primaryHeight - screen.frame.midY)
-        CGWarpMouseCursorPosition(center)
     }
 }
 

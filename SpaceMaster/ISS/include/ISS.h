@@ -81,6 +81,17 @@ bool iss_copy_menubar_space_snapshot(ISSSpaceSnapshot *outSnapshot,
                                      unsigned int maxSpaces);
 
 /**
+ * @brief Copies the visible spaces for the display where the cursor is located.
+ * @param outSnapshot Output pointer receiving currentIndex and spaceCount.
+ * @param outSpaces Caller-provided buffer that receives ordered visible spaces.
+ * @param maxSpaces Capacity of outSpaces.
+ * @return true on success, false if unavailable or the provided buffer is too small.
+ */
+bool iss_copy_cursor_space_snapshot(ISSSpaceSnapshot *outSnapshot,
+                                    ISSSpaceSnapshotEntry *outSpaces,
+                                    unsigned int maxSpaces);
+
+/**
  * @brief Returns the UUID c-string for a snapshot entry when present.
  * @param space Snapshot entry.
  * @return Null when the entry has no UUID.

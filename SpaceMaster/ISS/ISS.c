@@ -477,6 +477,18 @@ bool iss_copy_menubar_space_snapshot(ISSSpaceSnapshot *outSnapshot,
     return load_space_snapshot_for_display(outSnapshot, outSpaces, maxSpaces, false);
 }
 
+bool iss_copy_cursor_space_snapshot(ISSSpaceSnapshot *outSnapshot,
+                                    ISSSpaceSnapshotEntry *outSpaces,
+                                    unsigned int maxSpaces) {
+    if (!outSnapshot || !outSpaces || maxSpaces == 0) {
+        return false;
+    }
+
+    memset(outSnapshot, 0, sizeof(*outSnapshot));
+    memset(outSpaces, 0, sizeof(*outSpaces) * maxSpaces);
+    return load_space_snapshot_for_display(outSnapshot, outSpaces, maxSpaces, true);
+}
+
 const char *iss_space_snapshot_entry_uuid(const ISSSpaceSnapshotEntry *space) {
     if (!space || !space->hasUUID || space->uuid[0] == '\0') {
         return NULL;

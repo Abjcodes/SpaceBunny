@@ -8,6 +8,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         static let renameMenuTitle = "Rename Current Space..."
         static let menuActionDelay = 0.15
         static let autoNameRefreshDelays: [TimeInterval] = [0.2, 0.35, 0.5]
+        static let cursorRefreshInterval: TimeInterval = 0.25
     }
 
     private struct RenameTarget {
@@ -23,6 +24,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let menu = NSMenu()
     private let workspaceNotificationCenter = NSWorkspace.shared.notificationCenter
     private var autoNameRefreshGeneration = 0
+    private var cursorRefreshTimer: Timer?
+    private var lastCursorSnapshot: MenubarSpaceSnapshot?
 
     init(spaceSwitcher: SpaceSwitching) {
         self.spaceSwitcher = spaceSwitcher
@@ -31,6 +34,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         configureStatusItem()
         startObservingSystemChanges()
+        startCursorRefreshTimer()
         rebuildMenu()
         scheduleAutomaticNameRefresh()
     }
@@ -69,12 +73,33 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             name: NSApplication.didBecomeActiveNotification,
             object: nil
         )
+
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleScreenParametersDidChange),
+            name: NSApplication.didChangeScreenParametersNotification,
+            object: nil
+        )
+    }
+
+    private func startCursorRefreshTimer() {
+        let timer = Timer.scheduledTimer(
+            withTimeInterval: Constants.cursorRefreshInterval,
+            repeats: true
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.refreshCursorSnapshot()
+            }
+        }
+        timer.tolerance = 0.05
+        cursorRefreshTimer = timer
     }
 
     private func rebuildMenu() {
         menu.removeAllItems()
         let canSwitchSpaces = spaceSwitcher.isAccessibilityTrusted
-        let snapshot = spaceSwitcher.menubarSnapshot()
+        let snapshot = currentSnapshot()
+        lastCursorSnapshot = snapshot
 
         if !canSwitchSpaces {
             let permissionItem = NSMenuItem(
@@ -112,6 +137,24 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(menuItem(title: "Refresh", action: #selector(refresh)))
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Quit SpaceMaster", action: #selector(quit)))
+    }
+
+    private func currentSnapshot() -> MenubarSpaceSnapshot? {
+        spaceSwitcher.cursorSnapshot() ?? spaceSwitcher.menubarSnapshot()
+    }
+
+    private func refreshCursorSnapshot() {
+        let snapshot = currentSnapshot()
+        let previousSnapshot = lastCursorSnapshot
+        lastCursorSnapshot = snapshot
+
+        guard snapshot?.currentIndex != previousSnapshot?.currentIndex
+            || snapshot?.currentSpace?.identity != previousSnapshot?.currentSpace?.identity
+            || (snapshot == nil) != (previousSnapshot == nil) else {
+            return
+        }
+
+        updateStatusItemTitle(for: snapshot)
     }
 
     private func renameTarget(from snapshot: MenubarSpaceSnapshot?) -> RenameTarget? {
@@ -225,7 +268,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func performSwitch(to spaceNumber: Int) {
-        guard spaceSwitcher.switchToMenubarSpace(spaceNumber) else {
+        let screenIndex = currentScreenIndex()
+        guard spaceSwitcher.switchToSpace(spaceNumber, onScreen: screenIndex) else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { [weak self] in
                 self?.rebuildMenu()
             }
@@ -242,7 +286,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let deadline = Date().addingTimeInterval(timeout)
 
         func poll() {
-            if let snapshot = spaceSwitcher.menubarSnapshot(),
+            if let snapshot = spaceSwitcher.cursorSnapshot() ?? spaceSwitcher.menubarSnapshot(),
                snapshot.currentIndex == targetIndex {
                 completion()
                 return
@@ -308,7 +352,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func refreshAutomaticNameForCurrentSpace() -> AutomaticNameRefreshResult {
-        guard let snapshot = spaceSwitcher.menubarSnapshot(),
+        guard let snapshot = spaceSwitcher.cursorSnapshot() ?? spaceSwitcher.menubarSnapshot(),
               let currentSpace = snapshot.currentSpace else {
             return .retryNeeded
         }
@@ -334,6 +378,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         rebuildMenu()
     }
 
+    @objc private func handleScreenParametersDidChange() {
+        rebuildMenu()
+    }
+
     @objc private func refresh() {
         rebuildMenu()
         scheduleAutomaticNameRefresh()
@@ -341,6 +389,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     @objc private func quit() {
         NSApp.terminate(nil)
+    }
+
+    private func currentScreenIndex() -> Int {
+        let mouseLocation = NSEvent.mouseLocation
+        return NSScreen.screens.firstIndex(where: { $0.frame.contains(mouseLocation) }) ?? 0
     }
 }
 
