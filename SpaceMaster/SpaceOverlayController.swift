@@ -25,6 +25,7 @@ final class SpaceOverlayController {
     private let spaceSwitcher: SpaceSwitching
     private let titleResolver: SpaceTitleResolver
     private let viewModel = SpaceOverlayViewModel()
+    private let hapticPerformer = NSHapticFeedbackManager.defaultPerformer
 
     private var panel: SpaceOverlayPanel?
     private var hostingView: NSHostingView<SpaceOverlayView>?
@@ -175,7 +176,12 @@ final class SpaceOverlayController {
             return
         }
 
+        guard viewModel.selectedIndex != hoveredIndex else {
+            return
+        }
+
         viewModel.selectedIndex = hoveredIndex
+        performHoverHaptic()
     }
 
     private func hoveredRowIndex(
@@ -257,6 +263,10 @@ final class SpaceOverlayController {
             width: size.width,
             height: size.height
         )
+    }
+
+    private func performHoverHaptic() {
+        hapticPerformer.perform(.levelChange, performanceTime: .default)
     }
 }
 
