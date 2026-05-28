@@ -16,10 +16,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let spaceNumber: Int
     }
 
-    private let manualAliasStore = SpaceAliasStore(kind: .manual)
-    private let automaticAliasStore = SpaceAliasStore(kind: .automatic)
     private let fullScreenSpaceNameDetector = FullScreenSpaceNameDetector()
     private let spaceSwitcher: SpaceSwitching
+    private let titleResolver: SpaceTitleResolver
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let workspaceNotificationCenter = NSWorkspace.shared.notificationCenter
@@ -27,8 +26,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private var cursorRefreshTimer: Timer?
     private var lastCursorSnapshot: MenubarSpaceSnapshot?
 
-    init(spaceSwitcher: SpaceSwitching) {
+    init(
+        spaceSwitcher: SpaceSwitching,
+        titleResolver: SpaceTitleResolver
+    ) {
         self.spaceSwitcher = spaceSwitcher
+        self.titleResolver = titleResolver
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -209,17 +212,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
 
     private func displayTitle(for identity: MenubarSpaceIdentity?, spaceNumber: Int) -> String {
-        guard let identity else {
-            return defaultSpaceTitle(for: spaceNumber)
-        }
-
-        return manualAliasStore.alias(for: identity)
-            ?? automaticAliasStore.alias(for: identity)
-            ?? defaultSpaceTitle(for: spaceNumber)
+        titleResolver.title(for: identity, spaceNumber: spaceNumber)
     }
 
     private func defaultSpaceTitle(for spaceNumber: Int) -> String {
-        "Desktop \(spaceNumber)"
+        titleResolver.defaultTitle(for: spaceNumber)
     }
 
     private func menuItem(title: String, action: Selector) -> NSMenuItem {
@@ -246,7 +243,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         let textField = NSTextField(frame: NSRect(x: 0, y: 0, width: 260, height: 24))
         textField.placeholderString = displayTitle(for: target.identity, spaceNumber: target.spaceNumber)
-        textField.stringValue = manualAliasStore.alias(for: target.identity) ?? ""
+        textField.stringValue = titleResolver.manualAlias(for: target.identity) ?? ""
         alert.accessoryView = textField
         alert.window.initialFirstResponder = textField
 
@@ -255,7 +252,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         guard alert.runModal() == .alertFirstButtonReturn else { return }
 
         let alias = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        manualAliasStore.setAlias(alias.isEmpty ? nil : alias, for: target.identity)
+        titleResolver.setManualAlias(alias.isEmpty ? nil : alias, for: target.identity)
         rebuildMenu()
     }
 
@@ -359,10 +356,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         switch fullScreenSpaceNameDetector.detectCurrentFullScreenAppName() {
         case .fullScreenApp(let name):
-            let didChange = automaticAliasStore.setAlias(name, for: currentSpace.identity)
+            let didChange = titleResolver.setAutomaticAlias(name, for: currentSpace.identity)
             return didChange ? .updated : .unchanged
         case .notFullScreen:
-            let didChange = automaticAliasStore.setAlias(nil, for: currentSpace.identity)
+            let didChange = titleResolver.setAutomaticAlias(nil, for: currentSpace.identity)
             return didChange ? .updated : .unchanged
         case .unavailable:
             return .retryNeeded
@@ -394,82 +391,6 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func currentScreenIndex() -> Int {
         let mouseLocation = NSEvent.mouseLocation
         return NSScreen.screens.firstIndex(where: { $0.frame.contains(mouseLocation) }) ?? 0
-    }
-}
-
-private final class SpaceAliasStore {
-    enum Kind {
-        case manual
-        case automatic
-    }
-
-    private enum Keys {
-        static let manualAliases = "spaceAliasesByStableID"
-        static let automaticAliases = "spaceAutomaticAliasesByStableID"
-        static let legacyNumberedAliases = "spaceAliases"
-    }
-
-    private let kind: Kind
-    private let defaults: UserDefaults
-
-    init(kind: Kind, defaults: UserDefaults = .standard) {
-        self.kind = kind
-        self.defaults = defaults
-
-        if kind == .manual {
-            clearLegacyAliasesIfNeeded()
-        }
-    }
-
-    func alias(for identity: MenubarSpaceIdentity) -> String? {
-        aliases()[identity.aliasKey]
-    }
-
-    @discardableResult
-    func setAlias(_ alias: String?, for identity: MenubarSpaceIdentity) -> Bool {
-        let normalizedAlias = alias?.trimmingCharacters(in: .whitespacesAndNewlines)
-        var updatedAliases = aliases()
-        let key = identity.aliasKey
-        let resolvedAlias = normalizedAlias?.isEmpty == false ? normalizedAlias : nil
-
-        if updatedAliases[key] == resolvedAlias {
-            return false
-        }
-
-        if let resolvedAlias {
-            updatedAliases[key] = resolvedAlias
-        } else {
-            updatedAliases.removeValue(forKey: key)
-        }
-
-        if updatedAliases.isEmpty {
-            defaults.removeObject(forKey: aliasesKey)
-        } else {
-            defaults.set(updatedAliases, forKey: aliasesKey)
-        }
-
-        return true
-    }
-
-    private func clearLegacyAliasesIfNeeded() {
-        guard defaults.object(forKey: Keys.legacyNumberedAliases) != nil else {
-            return
-        }
-
-        defaults.removeObject(forKey: Keys.legacyNumberedAliases)
-    }
-
-    private func aliases() -> [String: String] {
-        defaults.dictionary(forKey: aliasesKey) as? [String: String] ?? [:]
-    }
-
-    private var aliasesKey: String {
-        switch kind {
-        case .manual:
-            Keys.manualAliases
-        case .automatic:
-            Keys.automaticAliases
-        }
     }
 }
 
