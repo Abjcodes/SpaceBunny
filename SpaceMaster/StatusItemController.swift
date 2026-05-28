@@ -4,7 +4,7 @@ import AppKit
 final class StatusItemController: NSObject, NSMenuDelegate {
     private enum Constants {
         static let appName = "SpaceMaster"
-        static let statusBarIcon = "square.grid.2x2"
+        static let unavailableTitle = "Spaces"
     }
 
     private let spaceSwitcher: SpaceSwitching
@@ -26,15 +26,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func configureStatusItem() {
         if let button = statusItem.button {
-            if let image = NSImage(
-                systemSymbolName: Constants.statusBarIcon,
-                accessibilityDescription: Constants.appName
-            ) {
-                image.isTemplate = true
-                button.image = image
-            } else {
-                button.title = "SM"
-            }
+            button.image = nil
+            button.title = Constants.unavailableTitle
+            button.toolTip = Constants.appName
         }
 
         menu.delegate = self
@@ -58,8 +52,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         if let info = spaceSwitcher.spaceInfo() {
+            updateStatusItemTitle(for: info)
             addSpaceInfoItems(info, canSwitchSpaces: canSwitchSpaces)
         } else {
+            updateStatusItemTitle(for: nil)
             let item = NSMenuItem(title: "Spaces unavailable", action: nil, keyEquivalent: "")
             item.isEnabled = false
             menu.addItem(item)
@@ -74,7 +70,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private func addSpaceInfoItems(_ info: (currentIndex: Int, spaceCount: Int), canSwitchSpaces: Bool) {
         let currentSpaceNumber = info.currentIndex + 1
         let summary = NSMenuItem(
-            title: "Current Space: \(currentSpaceNumber) of \(info.spaceCount)",
+            title: "\(spaceTitle(for: currentSpaceNumber)) of \(info.spaceCount)",
             action: nil,
             keyEquivalent: ""
         )
@@ -83,12 +79,26 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
 
         for spaceNumber in 1...info.spaceCount {
-            let item = menuItem(title: "Desktop \(spaceNumber)", action: #selector(switchSpace(_:)))
+            let item = menuItem(title: spaceTitle(for: spaceNumber), action: #selector(switchSpace(_:)))
             item.representedObject = spaceNumber
             item.state = spaceNumber == currentSpaceNumber ? .on : .off
             item.isEnabled = canSwitchSpaces
             menu.addItem(item)
         }
+    }
+
+    private func updateStatusItemTitle(for info: (currentIndex: Int, spaceCount: Int)?) {
+        guard let button = statusItem.button else { return }
+        guard let info else {
+            button.title = Constants.unavailableTitle
+            return
+        }
+
+        button.title = spaceTitle(for: info.currentIndex + 1)
+    }
+
+    private func spaceTitle(for spaceNumber: Int) -> String {
+        "Desktop \(spaceNumber)"
     }
 
     private func menuItem(title: String, action: Selector) -> NSMenuItem {
