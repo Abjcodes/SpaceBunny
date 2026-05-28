@@ -1,0 +1,390 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		5C39213C2FC8748F00A4A501 /* SpaceMasterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921312FC8748F00A4A501 /* SpaceMasterApp.swift */; };
+		5C39213D2FC8748F00A4A501 /* SpaceSwitching.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921322FC8748F00A4A501 /* SpaceSwitching.swift */; };
+		5C39213E2FC8748F00A4A501 /* SpaceManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921332FC8748F00A4A501 /* SpaceManager.swift */; };
+		5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921342FC8748F00A4A501 /* StatusItemController.swift */; };
+		5C3921402FC8748F00A4A501 /* ISS.c in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921372FC8748F00A4A501 /* ISS.c */; };
+		5C3921412FC8748F00A4A501 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		5C39212B2FC8748F00A4A501 /* SpaceMaster.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpaceMaster.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		5C3921312FC8748F00A4A501 /* SpaceMasterApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceMasterApp.swift; sourceTree = "<group>"; };
+		5C3921322FC8748F00A4A501 /* SpaceSwitching.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceSwitching.swift; sourceTree = "<group>"; };
+		5C3921332FC8748F00A4A501 /* SpaceManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceManager.swift; sourceTree = "<group>"; };
+		5C3921342FC8748F00A4A501 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
+		5C3921352FC8748F00A4A501 /* SpaceMaster-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SpaceMaster-Bridging-Header.h"; sourceTree = "<group>"; };
+		5C3921362FC8748F00A4A501 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5C3921372FC8748F00A4A501 /* ISS.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = ISS.c; sourceTree = "<group>"; };
+		5C3921382FC8748F00A4A501 /* ISS.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ISS.h; sourceTree = "<group>"; };
+		5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		5C3921282FC8748F00A4A501 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C3921412FC8748F00A4A501 /* ApplicationServices.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		5C3921222FC8748F00A4A501 = {
+			isa = PBXGroup;
+			children = (
+				5C39212E2FC8748F00A4A501 /* SpaceMaster */,
+				5C3921292FC8748F00A4A501 /* Frameworks */,
+				5C39212A2FC8748F00A4A501 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		5C3921292FC8748F00A4A501 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5C39212A2FC8748F00A4A501 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				5C39212B2FC8748F00A4A501 /* SpaceMaster.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5C39212E2FC8748F00A4A501 /* SpaceMaster */ = {
+			isa = PBXGroup;
+			children = (
+				5C3921312FC8748F00A4A501 /* SpaceMasterApp.swift */,
+				5C3921322FC8748F00A4A501 /* SpaceSwitching.swift */,
+				5C3921332FC8748F00A4A501 /* SpaceManager.swift */,
+				5C3921342FC8748F00A4A501 /* StatusItemController.swift */,
+				5C3921352FC8748F00A4A501 /* SpaceMaster-Bridging-Header.h */,
+				5C3921362FC8748F00A4A501 /* Info.plist */,
+				5C39212F2FC8748F00A4A501 /* ISS */,
+			);
+			path = SpaceMaster;
+			sourceTree = "<group>";
+		};
+		5C39212F2FC8748F00A4A501 /* ISS */ = {
+			isa = PBXGroup;
+			children = (
+				5C3921372FC8748F00A4A501 /* ISS.c */,
+				5C3921302FC8748F00A4A501 /* include */,
+			);
+			path = ISS;
+			sourceTree = "<group>";
+		};
+		5C3921302FC8748F00A4A501 /* include */ = {
+			isa = PBXGroup;
+			children = (
+				5C3921382FC8748F00A4A501 /* ISS.h */,
+			);
+			path = include;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		5C39212C2FC8748F00A4A501 /* SpaceMaster */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 5C3921482FC8748F00A4A501 /* Build configuration list for PBXNativeTarget "SpaceMaster" */;
+			buildPhases = (
+				5C3921272FC8748F00A4A501 /* Sources */,
+				5C3921282FC8748F00A4A501 /* Frameworks */,
+				5C3921262FC8748F00A4A501 /* Resources */,
+				5C3921492FC8748F00A4A501 /* Clear Extended Attributes */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SpaceMaster;
+			productName = SpaceMaster;
+			productReference = 5C39212B2FC8748F00A4A501 /* SpaceMaster.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5C3921232FC8748F00A4A501 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2600;
+				LastUpgradeCheck = 2600;
+				TargetAttributes = {
+					5C39212C2FC8748F00A4A501 = {
+						CreatedOnToolsVersion = 26.0.1;
+					};
+				};
+			};
+			buildConfigurationList = 5C3921242FC8748F00A4A501 /* Build configuration list for PBXProject "SpaceMaster" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5C3921222FC8748F00A4A501;
+			productRefGroup = 5C39212A2FC8748F00A4A501 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				5C39212C2FC8748F00A4A501 /* SpaceMaster */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		5C3921262FC8748F00A4A501 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		5C3921492FC8748F00A4A501 /* Clear Extended Attributes */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Clear Extended Attributes";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ -d \"$TARGET_BUILD_DIR/$WRAPPER_NAME\" ]; then\n    /usr/bin/xattr -cr \"$TARGET_BUILD_DIR/$WRAPPER_NAME\"\nfi\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		5C3921272FC8748F00A4A501 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				5C39213C2FC8748F00A4A501 /* SpaceMasterApp.swift in Sources */,
+				5C39213D2FC8748F00A4A501 /* SpaceSwitching.swift in Sources */,
+				5C39213E2FC8748F00A4A501 /* SpaceManager.swift in Sources */,
+				5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */,
+				5C3921402FC8748F00A4A501 /* ISS.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		5C3921422FC8748F00A4A501 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		5C3921432FC8748F00A4A501 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		5C3921462FC8748F00A4A501 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PPQ4A2J7RY;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpaceMaster/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abjcodes.SpaceMaster;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SpaceMaster/SpaceMaster-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		5C3921472FC8748F00A4A501 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = PPQ4A2J7RY;
+				ENABLE_DEBUG_DYLIB = NO;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = SpaceMaster/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.abjcodes.SpaceMaster;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "SpaceMaster/SpaceMaster-Bridging-Header.h";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5C3921242FC8748F00A4A501 /* Build configuration list for PBXProject "SpaceMaster" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C3921422FC8748F00A4A501 /* Debug */,
+				5C3921432FC8748F00A4A501 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		5C3921482FC8748F00A4A501 /* Build configuration list for PBXNativeTarget "SpaceMaster" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				5C3921462FC8748F00A4A501 /* Debug */,
+				5C3921472FC8748F00A4A501 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 5C3921232FC8748F00A4A501 /* Project object */;
+}
