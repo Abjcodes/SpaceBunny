@@ -6,12 +6,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         static let appName = "SpaceMaster"
         static let unavailableTitle = "Spaces"
         static let renameMenuTitle = "Rename Current Space..."
+        static let assignHotkeyMenuTitle = "Assign Hotkey..."
         static let menuActionDelay = 0.15
         static let autoNameRefreshDelays: [TimeInterval] = [0.2, 0.35, 0.5]
         static let cursorRefreshInterval: TimeInterval = 0.25
     }
 
-    private struct RenameTarget {
+    private struct SpaceActionTarget {
         let identity: MenubarSpaceIdentity
         let spaceNumber: Int
     }
@@ -19,6 +20,8 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let fullScreenSpaceNameDetector = FullScreenSpaceNameDetector()
     private let spaceSwitcher: SpaceSwitching
     private let titleResolver: SpaceTitleResolver
+    private let hotkeyStore: SpaceHotkeyStore
+    private let hotkeyRegistrar: SpaceHotkeyRegistrar
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let workspaceNotificationCenter = NSWorkspace.shared.notificationCenter
@@ -28,10 +31,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     init(
         spaceSwitcher: SpaceSwitching,
-        titleResolver: SpaceTitleResolver
+        titleResolver: SpaceTitleResolver,
+        hotkeyStore: SpaceHotkeyStore,
+        hotkeyRegistrar: SpaceHotkeyRegistrar
     ) {
         self.spaceSwitcher = spaceSwitcher
         self.titleResolver = titleResolver
+        self.hotkeyStore = hotkeyStore
+        self.hotkeyRegistrar = hotkeyRegistrar
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -127,14 +134,24 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
+        let actionTarget = spaceActionTarget(from: snapshot)
         let renameItem = menuItem(title: Constants.renameMenuTitle, action: #selector(renameCurrentSpace(_:)))
-        if let renameTarget = renameTarget(from: snapshot) {
-            renameItem.representedObject = renameTarget
+        if let actionTarget {
+            renameItem.representedObject = actionTarget
             renameItem.isEnabled = true
         } else {
             renameItem.isEnabled = false
         }
         menu.addItem(renameItem)
+
+        let hotkeyItem = menuItem(title: Constants.assignHotkeyMenuTitle, action: #selector(assignHotkeyToCurrentSpace(_:)))
+        if let actionTarget {
+            hotkeyItem.representedObject = actionTarget
+            hotkeyItem.isEnabled = true
+        } else {
+            hotkeyItem.isEnabled = false
+        }
+        menu.addItem(hotkeyItem)
 
         menu.addItem(.separator())
         menu.addItem(menuItem(title: "Refresh", action: #selector(refresh)))
@@ -160,12 +177,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         updateStatusItemTitle(for: snapshot)
     }
 
-    private func renameTarget(from snapshot: MenubarSpaceSnapshot?) -> RenameTarget? {
+    private func spaceActionTarget(from snapshot: MenubarSpaceSnapshot?) -> SpaceActionTarget? {
         guard let snapshot, let currentSpace = snapshot.currentSpace else {
             return nil
         }
 
-        return RenameTarget(
+        return SpaceActionTarget(
             identity: currentSpace.identity,
             spaceNumber: snapshot.currentSpaceNumber
         )
@@ -173,7 +190,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func addSpaceInfoItems(_ snapshot: MenubarSpaceSnapshot, canSwitchSpaces: Bool) {
         let summary = NSMenuItem(
-            title: "\(spaceTitle(for: snapshot.currentSpace, spaceNumber: snapshot.currentSpaceNumber)) of \(snapshot.spaceCount)",
+            title: "Current space: n\(spaceTitle(for: snapshot.currentSpace, spaceNumber: snapshot.currentSpaceNumber))",
             action: nil,
             keyEquivalent: ""
         )
@@ -187,6 +204,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
                 title: spaceTitle(for: space, spaceNumber: spaceNumber),
                 action: #selector(switchSpace(_:))
             )
+            if let hotkey = hotkeyStore.hotkey(for: space.identity) {
+                applyHotkey(hotkey, to: item)
+            }
             item.representedObject = spaceNumber
             item.state = spaceNumber == snapshot.currentSpaceNumber ? .on : .off
             item.isEnabled = canSwitchSpaces
@@ -225,15 +245,22 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         return item
     }
 
+    private func applyHotkey(_ hotkey: SpaceHotkey, to item: NSMenuItem) {
+        guard let keyEquivalent = hotkey.menuKeyEquivalent else { return }
+
+        item.keyEquivalent = keyEquivalent
+        item.keyEquivalentModifierMask = hotkey.menuModifierFlags
+    }
+
     @objc private func renameCurrentSpace(_ sender: NSMenuItem) {
-        guard let target = sender.representedObject as? RenameTarget else { return }
+        guard let target = sender.representedObject as? SpaceActionTarget else { return }
 
         DispatchQueue.main.asyncAfter(deadline: .now() + Constants.menuActionDelay) { [weak self] in
             self?.presentRenamePrompt(for: target)
         }
     }
 
-    private func presentRenamePrompt(for target: RenameTarget) {
+    private func presentRenamePrompt(for target: SpaceActionTarget) {
         let alert = NSAlert()
         alert.messageText = "Rename \(displayTitle(for: target.identity, spaceNumber: target.spaceNumber))"
         alert.informativeText = "Enter a custom name for this space. Leave it blank to clear the alias."
@@ -254,6 +281,124 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let alias = textField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         titleResolver.setManualAlias(alias.isEmpty ? nil : alias, for: target.identity)
         rebuildMenu()
+    }
+
+    @objc private func assignHotkeyToCurrentSpace(_ sender: NSMenuItem) {
+        guard let target = sender.representedObject as? SpaceActionTarget else { return }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.menuActionDelay) { [weak self] in
+            self?.presentHotkeyPrompt(for: target)
+        }
+    }
+
+    private func presentHotkeyPrompt(for target: SpaceActionTarget) {
+        let currentHotkey = hotkeyStore.hotkey(for: target.identity)
+        let recorderView = HotkeyRecorderView(currentHotkey: currentHotkey)
+        let title = displayTitle(for: target.identity, spaceNumber: target.spaceNumber)
+
+        let alert = NSAlert()
+        alert.messageText = "Assign Hotkey for \(title)"
+        if let currentHotkey {
+            alert.informativeText = "Current hotkey: \(currentHotkey.displayString). Press a modifier + key to replace it."
+        } else {
+            alert.informativeText = "Press a modifier + key to assign it to this space."
+        }
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Save")
+        alert.addButton(withTitle: "Clear")
+        alert.addButton(withTitle: "Cancel")
+        alert.accessoryView = recorderView
+        alert.window.initialFirstResponder = recorderView
+
+        NSApp.activate(ignoringOtherApps: true)
+
+        switch alert.runModal() {
+        case .alertFirstButtonReturn:
+            guard let hotkey = recorderView.hotkey else {
+                presentWarning(
+                    title: "No Hotkey Captured",
+                    message: "Press a modifier + key before saving."
+                )
+                return
+            }
+
+            saveHotkey(hotkey, for: target)
+        case .alertSecondButtonReturn:
+            clearHotkey(for: target)
+        default:
+            break
+        }
+    }
+
+    private func saveHotkey(_ hotkey: SpaceHotkey, for target: SpaceActionTarget) {
+        let previousHotkey = hotkeyStore.hotkey(for: target.identity)
+
+        do {
+            try hotkeyStore.setHotkey(hotkey, for: target.identity)
+        } catch SpaceHotkeyAssignmentError.duplicate(let existingStableStorageKey) {
+            presentWarning(
+                title: "Hotkey Already Assigned",
+                message: "\(hotkey.displayString) is already assigned to \(spaceTitle(forStableStorageKey: existingStableStorageKey))."
+            )
+            return
+        } catch {
+            presentWarning(
+                title: "Hotkey Not Saved",
+                message: "SpaceMaster could not save this hotkey."
+            )
+            return
+        }
+
+        if let failure = hotkeyRegistrar.refresh().first(where: {
+            $0.stableStorageKey == target.identity.stableStorageKey
+        }) {
+            restoreHotkey(previousHotkey, for: target.identity)
+            hotkeyRegistrar.refresh()
+            presentWarning(
+                title: "Hotkey Unavailable",
+                message: "\(failure.hotkey.displayString) could not be registered by macOS. Try a different shortcut. Status: \(failure.status)."
+            )
+            rebuildMenu()
+            return
+        }
+
+        rebuildMenu()
+    }
+
+    private func clearHotkey(for target: SpaceActionTarget) {
+        hotkeyStore.clearHotkey(for: target.identity)
+        hotkeyRegistrar.refresh()
+        rebuildMenu()
+    }
+
+    private func restoreHotkey(_ hotkey: SpaceHotkey?, for identity: MenubarSpaceIdentity) {
+        if let hotkey {
+            try? hotkeyStore.setHotkey(hotkey, for: identity)
+        } else {
+            hotkeyStore.clearHotkey(for: identity)
+        }
+    }
+
+    private func spaceTitle(forStableStorageKey stableStorageKey: String) -> String {
+        guard let snapshot = currentSnapshot(),
+              let match = snapshot.spaces.enumerated().first(where: {
+                  $0.element.identity.stableStorageKey == stableStorageKey
+              }) else {
+            return "another space"
+        }
+
+        return spaceTitle(for: match.element, spaceNumber: match.offset + 1)
+    }
+
+    private func presentWarning(title: String, message: String) {
+        let alert = NSAlert()
+        alert.messageText = title
+        alert.informativeText = message
+        alert.alertStyle = .warning
+        alert.addButton(withTitle: "OK")
+
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
     }
 
     @objc private func switchSpace(_ sender: NSMenuItem) {
@@ -398,4 +543,112 @@ private enum AutomaticNameRefreshResult {
     case updated
     case unchanged
     case retryNeeded
+}
+
+private final class HotkeyRecorderView: NSView {
+    private enum Layout {
+        static let width: CGFloat = 320
+        static let height: CGFloat = 76
+        static let cornerRadius: CGFloat = 8
+    }
+
+    private let valueLabel = NSTextField(labelWithString: "")
+    private let detailLabel = NSTextField(labelWithString: "")
+
+    private(set) var hotkey: SpaceHotkey?
+
+    init(currentHotkey: SpaceHotkey?) {
+        hotkey = currentHotkey
+        super.init(frame: NSRect(x: 0, y: 0, width: Layout.width, height: Layout.height))
+
+        configureView()
+        configureLabels()
+        updateLabels()
+        updateFocusState(isFocused: false)
+    }
+
+    @available(*, unavailable)
+    required init?(coder: NSCoder) {
+        nil
+    }
+
+    override var acceptsFirstResponder: Bool {
+        true
+    }
+
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.window?.makeFirstResponder(self)
+        }
+    }
+
+    override func mouseDown(with event: NSEvent) {
+        window?.makeFirstResponder(self)
+    }
+
+    override func becomeFirstResponder() -> Bool {
+        updateFocusState(isFocused: true)
+        return true
+    }
+
+    override func resignFirstResponder() -> Bool {
+        updateFocusState(isFocused: false)
+        return true
+    }
+
+    override func keyDown(with event: NSEvent) {
+        guard let capturedHotkey = SpaceHotkey.from(event: event) else {
+            NSSound.beep()
+            return
+        }
+
+        hotkey = capturedHotkey
+        updateLabels()
+    }
+
+    private func configureView() {
+        wantsLayer = true
+        layer?.cornerRadius = Layout.cornerRadius
+        layer?.borderWidth = 1
+        layer?.backgroundColor = NSColor.controlBackgroundColor.withAlphaComponent(0.5).cgColor
+    }
+
+    private func configureLabels() {
+        valueLabel.alignment = .center
+        valueLabel.font = .monospacedSystemFont(ofSize: 22, weight: .semibold)
+        valueLabel.lineBreakMode = .byTruncatingTail
+        valueLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        detailLabel.alignment = .center
+        detailLabel.font = .systemFont(ofSize: 12)
+        detailLabel.textColor = .secondaryLabelColor
+        detailLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        addSubview(valueLabel)
+        addSubview(detailLabel)
+
+        NSLayoutConstraint.activate([
+            valueLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            valueLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            valueLabel.topAnchor.constraint(equalTo: topAnchor, constant: 14),
+
+            detailLabel.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 14),
+            detailLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -14),
+            detailLabel.topAnchor.constraint(equalTo: valueLabel.bottomAnchor, constant: 8)
+        ])
+    }
+
+    private func updateLabels() {
+        valueLabel.stringValue = hotkey?.displayString ?? "Press Shortcut"
+        detailLabel.stringValue = hotkey == nil
+            ? "Modifier + key"
+            : "Save to assign this hotkey"
+    }
+
+    private func updateFocusState(isFocused: Bool) {
+        layer?.borderColor = (isFocused ? NSColor.controlAccentColor : .separatorColor).cgColor
+    }
 }

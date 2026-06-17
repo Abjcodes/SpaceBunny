@@ -15,9 +15,7 @@
 		5C3921412FC8748F00A4A501 /* ApplicationServices.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */; };
 		5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */; };
 		5C39214D2FC8748F00A4A501 /* SpaceNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */; };
-		5C39214F2FC8748F00A4A501 /* ModifierShortcutMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214E2FC8748F00A4A501 /* ModifierShortcutMonitor.swift */; };
-		5C3921512FC8748F00A4A501 /* SpaceOverlayCoordinator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921502FC8748F00A4A501 /* SpaceOverlayCoordinator.swift */; };
-		5C3921532FC8748F00A4A501 /* SpaceOverlayController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921522FC8748F00A4A501 /* SpaceOverlayController.swift */; };
+		5C3921552FC8748F00A4A501 /* SpaceHotkeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,9 +31,7 @@
 		5C39213A2FC8748F00A4A501 /* ApplicationServices.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ApplicationServices.framework; path = System/Library/Frameworks/ApplicationServices.framework; sourceTree = SDKROOT; };
 		5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenSpaceNameDetector.swift; sourceTree = "<group>"; };
 		5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceNaming.swift; sourceTree = "<group>"; };
-		5C39214E2FC8748F00A4A501 /* ModifierShortcutMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModifierShortcutMonitor.swift; sourceTree = "<group>"; };
-		5C3921502FC8748F00A4A501 /* SpaceOverlayCoordinator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceOverlayCoordinator.swift; sourceTree = "<group>"; };
-		5C3921522FC8748F00A4A501 /* SpaceOverlayController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceOverlayController.swift; sourceTree = "<group>"; };
+		5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceHotkeys.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -84,9 +80,7 @@
 				5C3921342FC8748F00A4A501 /* StatusItemController.swift */,
 				5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */,
 				5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */,
-				5C39214E2FC8748F00A4A501 /* ModifierShortcutMonitor.swift */,
-				5C3921502FC8748F00A4A501 /* SpaceOverlayCoordinator.swift */,
-				5C3921522FC8748F00A4A501 /* SpaceOverlayController.swift */,
+				5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */,
 				5C3921352FC8748F00A4A501 /* SpaceMaster-Bridging-Header.h */,
 				5C3921362FC8748F00A4A501 /* Info.plist */,
 				5C39212F2FC8748F00A4A501 /* ISS */,
@@ -209,9 +203,7 @@
 				5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */,
 				5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */,
 				5C39214D2FC8748F00A4A501 /* SpaceNaming.swift in Sources */,
-				5C39214F2FC8748F00A4A501 /* ModifierShortcutMonitor.swift in Sources */,
-				5C3921512FC8748F00A4A501 /* SpaceOverlayCoordinator.swift in Sources */,
-				5C3921532FC8748F00A4A501 /* SpaceOverlayController.swift in Sources */,
+				5C3921552FC8748F00A4A501 /* SpaceHotkeys.swift in Sources */,
 				5C3921402FC8748F00A4A501 /* ISS.c in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -334,10 +326,12 @@
 		5C3921462FC8748F00A4A501 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PPQ4A2J7RY;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = PPQ4A2J7RY;
 				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -360,10 +354,12 @@
 		5C3921472FC8748F00A4A501 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=macosx*]" = "Developer ID Application";
+				CODE_SIGN_STYLE = Manual;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = PPQ4A2J7RY;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=macosx*]" = PPQ4A2J7RY;
 				ENABLE_DEBUG_DYLIB = NO;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = NO;

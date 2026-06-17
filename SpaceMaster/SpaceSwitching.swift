@@ -4,12 +4,16 @@ struct MenubarSpaceIdentity: Hashable {
     let uuid: String?
     let id64: UInt64
 
-    var aliasKey: String {
+    var stableStorageKey: String {
         if let uuid, !uuid.isEmpty {
             return "uuid:\(uuid)"
         }
 
         return "id64:\(id64)"
+    }
+
+    var aliasKey: String {
+        stableStorageKey
     }
 }
 
