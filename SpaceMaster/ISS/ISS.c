@@ -80,8 +80,7 @@ static bool iss_switch_to_index_with_info(const ISSSpaceInfo *info, unsigned int
 static bool iss_should_block_switch(const ISSSpaceInfo *info, ISSDirection direction);
 static bool iss_space_navigation_shortcut_for_event(CGEventType type,
                                                     CGEventRef event,
-                                                    ISSDirection *outDirection,
-                                                    bool *outShouldInvoke);
+                                                    ISSDirection *outDirection);
 
 static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, 
                                    CGEventRef event, void *refcon) {
@@ -95,13 +94,10 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
     }
 
     ISSDirection direction;
-    bool shouldInvoke;
     if (spaceNavigationShortcutCallback &&
         spaceNavigationShortcutEnabled &&
-        iss_space_navigation_shortcut_for_event(type, event, &direction, &shouldInvoke)) {
-        if (shouldInvoke) {
-            spaceNavigationShortcutCallback(direction, spaceNavigationShortcutContext);
-        }
+        iss_space_navigation_shortcut_for_event(type, event, &direction)) {
+        spaceNavigationShortcutCallback(direction, spaceNavigationShortcutContext);
 
         return NULL;
     }
@@ -111,9 +107,8 @@ static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type,
 
 static bool iss_space_navigation_shortcut_for_event(CGEventType type,
                                                     CGEventRef event,
-                                                    ISSDirection *outDirection,
-                                                    bool *outShouldInvoke) {
-    if (type != kCGEventKeyDown || !event || !outDirection || !outShouldInvoke) {
+                                                    ISSDirection *outDirection) {
+    if (type != kCGEventKeyDown || !event || !outDirection) {
         return false;
     }
 
@@ -141,7 +136,6 @@ static bool iss_space_navigation_shortcut_for_event(CGEventType type,
         return false;
     }
 
-    *outShouldInvoke = CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat) == 0;
     return true;
 }
 
