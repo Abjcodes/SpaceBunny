@@ -92,6 +92,16 @@ final class SpaceManager: SpaceSwitching {
     }
 
     @discardableResult
+    func switchToPreviousSpace() -> Bool {
+        switchSpace(direction: ISSDirectionLeft)
+    }
+
+    @discardableResult
+    func switchToNextSpace() -> Bool {
+        switchSpace(direction: ISSDirectionRight)
+    }
+
+    @discardableResult
     func switchToMenubarSpace(_ spaceNumber: Int) -> Bool {
         guard spaceNumber > 0 else { return false }
         guard isAccessibilityTrusted else {
@@ -114,6 +124,16 @@ final class SpaceManager: SpaceSwitching {
 
         _ = screenIndex
         return iss_switch_to_index(UInt32(spaceNumber - 1))
+    }
+
+    private func switchSpace(direction: ISSDirection) -> Bool {
+        guard isAccessibilityTrusted else {
+            requestAccessibilityPermission()
+            return false
+        }
+        guard ensureInitialized() else { return false }
+
+        return iss_switch(direction)
     }
 
     private func ensureInitialized() -> Bool {

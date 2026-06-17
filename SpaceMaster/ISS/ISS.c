@@ -3,6 +3,7 @@
 #include <ApplicationServices/ApplicationServices.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <CoreGraphics/CGEventTypes.h>
+#include <IOKit/hidsystem/IOLLEvent.h>
 #include <float.h>
 #include <stdbool.h>
 #include <stdio.h>
@@ -19,6 +20,8 @@ static const CGEventField kCGEventGestureSwipeVelocityY = (CGEventField)130;
 static const CGEventField kCGEventGesturePhase = (CGEventField)132;
 static const CGEventField kCGEventScrollGestureFlagBits = (CGEventField)135;
 static const CGEventField kCGEventGestureZoomDeltaX = (CGEventField)139;
+static const int64_t kISSVirtualKeyANSI_A = 0x00;
+static const int64_t kISSVirtualKeyANSI_S = 0x01;
 
 // See IOHIDEventType enum in IOHIDFamily
 static const uint32_t kIOHIDEventTypeDockSwipe = 23;
@@ -56,6 +59,9 @@ extern CGSSpaceID CGSGetActiveSpace(CGSConnectionID connection) __attribute__((w
 
 static CFMachPortRef globalTap = NULL;
 static CFRunLoopSourceRef globalSource = NULL;
+static ISSSpaceNavigationShortcutCallback spaceNavigationShortcutCallback = NULL;
+static void *spaceNavigationShortcutContext = NULL;
+static bool spaceNavigationShortcutEnabled = true;
 
 static bool extract_space_snapshot_from_display(CFDictionaryRef displayDict,
                                                 CGSSpaceID activeSpace,
@@ -72,14 +78,71 @@ static bool iss_post_switch_gesture(ISSDirection direction);
 static bool iss_switch_with_info(const ISSSpaceInfo *info, ISSDirection direction);
 static bool iss_switch_to_index_with_info(const ISSSpaceInfo *info, unsigned int targetIndex);
 static bool iss_should_block_switch(const ISSSpaceInfo *info, ISSDirection direction);
+static bool iss_space_navigation_shortcut_for_event(CGEventType type,
+                                                    CGEventRef event,
+                                                    ISSDirection *outDirection,
+                                                    bool *outShouldInvoke);
 
-// Event tap callback (required but can be empty)
 static CGEventRef eventTapCallback(CGEventTapProxy proxy, CGEventType type, 
                                    CGEventRef event, void *refcon) {
     (void)proxy;
-    (void)type;
     (void)refcon;
+    if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
+        if (globalTap) {
+            CGEventTapEnable(globalTap, true);
+        }
+        return event;
+    }
+
+    ISSDirection direction;
+    bool shouldInvoke;
+    if (spaceNavigationShortcutCallback &&
+        spaceNavigationShortcutEnabled &&
+        iss_space_navigation_shortcut_for_event(type, event, &direction, &shouldInvoke)) {
+        if (shouldInvoke) {
+            spaceNavigationShortcutCallback(direction, spaceNavigationShortcutContext);
+        }
+
+        return NULL;
+    }
+
     return event;
+}
+
+static bool iss_space_navigation_shortcut_for_event(CGEventType type,
+                                                    CGEventRef event,
+                                                    ISSDirection *outDirection,
+                                                    bool *outShouldInvoke) {
+    if (type != kCGEventKeyDown || !event || !outDirection || !outShouldInvoke) {
+        return false;
+    }
+
+    const CGEventFlags flags = CGEventGetFlags(event);
+    const bool isLeftOptionDown = (flags & NX_DEVICELALTKEYMASK) != 0;
+    if (!isLeftOptionDown) {
+        return false;
+    }
+
+    const CGEventFlags blockedModifiers =
+        kCGEventFlagMaskCommand |
+        kCGEventFlagMaskControl |
+        kCGEventFlagMaskShift |
+        kCGEventFlagMaskSecondaryFn;
+    if ((flags & blockedModifiers) != 0) {
+        return false;
+    }
+
+    const int64_t keyCode = CGEventGetIntegerValueField(event, kCGKeyboardEventKeycode);
+    if (keyCode == kISSVirtualKeyANSI_A) {
+        *outDirection = ISSDirectionLeft;
+    } else if (keyCode == kISSVirtualKeyANSI_S) {
+        *outDirection = ISSDirectionRight;
+    } else {
+        return false;
+    }
+
+    *outShouldInvoke = CGEventGetIntegerValueField(event, kCGKeyboardEventAutorepeat) == 0;
+    return true;
 }
 
 static bool cgs_symbols_available(void) {
@@ -332,6 +395,15 @@ static bool iss_should_block_switch(const ISSSpaceInfo *info, ISSDirection direc
 
 bool iss_can_move(ISSSpaceInfo info, ISSDirection direction) {
     return !iss_should_block_switch(&info, direction);
+}
+
+void iss_set_space_navigation_shortcut_callback(ISSSpaceNavigationShortcutCallback callback, void *context) {
+    spaceNavigationShortcutCallback = callback;
+    spaceNavigationShortcutContext = context;
+}
+
+void iss_set_space_navigation_shortcut_enabled(bool enabled) {
+    spaceNavigationShortcutEnabled = enabled;
 }
 
 static bool iss_post_switch_gesture(ISSDirection direction) {

@@ -53,6 +53,8 @@ protocol SpaceSwitching: AnyObject {
     func menubarSnapshot() -> MenubarSpaceSnapshot?
     func cursorSnapshot() -> MenubarSpaceSnapshot?
     func cursorSpaceInfo() -> (currentIndex: Int, spaceCount: Int)?
+    func switchToPreviousSpace() -> Bool
+    func switchToNextSpace() -> Bool
     func switchToMenubarSpace(_ spaceNumber: Int) -> Bool
     func switchToSpace(_ spaceNumber: Int, onScreen screenIndex: Int) -> Bool
 }

@@ -23,6 +23,8 @@ typedef enum {
     ISSDirectionRight = 1
 } ISSDirection;
 
+typedef void (*ISSSpaceNavigationShortcutCallback)(ISSDirection direction, void *context);
+
 /**
  * @brief Describes the current space state for the active display.
  */
@@ -54,6 +56,19 @@ typedef struct {
  * @return true if the switch was posted, false if blocked by bounds or errors
  */
 bool iss_switch(ISSDirection direction);
+
+/**
+ * @brief Registers a callback for fixed left-option space navigation shortcuts.
+ * @param callback Function invoked when the event tap detects a matching shortcut.
+ * @param context Caller-owned pointer passed back to callback.
+ */
+void iss_set_space_navigation_shortcut_callback(ISSSpaceNavigationShortcutCallback callback, void *context);
+
+/**
+ * @brief Enables or disables fixed shortcut handling without clearing the callback.
+ * @param enabled Whether matching shortcuts should be consumed and dispatched.
+ */
+void iss_set_space_navigation_shortcut_enabled(bool enabled);
 
 /**
  * @brief Retrieves the current space info for the display where the cursor is located.

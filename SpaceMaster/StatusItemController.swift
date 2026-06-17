@@ -310,6 +310,9 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         alert.accessoryView = recorderView
         alert.window.initialFirstResponder = recorderView
 
+        hotkeyRegistrar.setSpaceNavigationShortcutsEnabled(false)
+        defer { hotkeyRegistrar.setSpaceNavigationShortcutsEnabled(true) }
+
         NSApp.activate(ignoringOtherApps: true)
 
         switch alert.runModal() {
@@ -335,6 +338,12 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
         do {
             try hotkeyStore.setHotkey(hotkey, for: target.identity)
+        } catch SpaceHotkeyAssignmentError.reserved(let reservedHotkey) {
+            presentWarning(
+                title: "Hotkey Reserved",
+                message: "\(reservedHotkey.displayString) is reserved for moving between spaces."
+            )
+            return
         } catch SpaceHotkeyAssignmentError.duplicate(let existingStableStorageKey) {
             presentWarning(
                 title: "Hotkey Already Assigned",

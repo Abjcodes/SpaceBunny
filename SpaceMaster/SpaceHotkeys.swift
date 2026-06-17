@@ -126,6 +126,7 @@ struct SpaceHotkey: Codable, Equatable {
 
 enum SpaceHotkeyAssignmentError: Error {
     case duplicate(existingStableStorageKey: String)
+    case reserved(hotkey: SpaceHotkey)
 }
 
 struct SpaceHotkeyRegistrationFailure {
@@ -157,6 +158,10 @@ final class SpaceHotkeyStore {
         let key = identity.stableStorageKey
         var values = assignments()
 
+        guard !hotkey.isReservedSpaceNavigationShortcut else {
+            throw SpaceHotkeyAssignmentError.reserved(hotkey: hotkey)
+        }
+
         if let duplicate = values.first(where: { $0.key != key && $0.value == hotkey }) {
             throw SpaceHotkeyAssignmentError.duplicate(existingStableStorageKey: duplicate.key)
         }
@@ -183,7 +188,7 @@ final class SpaceHotkeyStore {
             return [:]
         }
 
-        return values
+        return values.filter { !$0.value.isReservedSpaceNavigationShortcut }
     }
 
     private func save(_ values: [String: SpaceHotkey]) {
@@ -208,13 +213,20 @@ final class SpaceHotkeyRegistrar {
         self.store = store
         self.spaceSwitcher = spaceSwitcher
         installEventHandler()
+        installSpaceNavigationShortcutHandler()
     }
 
     deinit {
+        iss_set_space_navigation_shortcut_enabled(false)
+        iss_set_space_navigation_shortcut_callback(nil, nil)
         hotkeyRefs.forEach { UnregisterEventHotKey($0) }
         if let eventHandler {
             RemoveEventHandler(eventHandler)
         }
+    }
+
+    func setSpaceNavigationShortcutsEnabled(_ enabled: Bool) {
+        iss_set_space_navigation_shortcut_enabled(enabled)
     }
 
     @MainActor
@@ -305,6 +317,31 @@ final class SpaceHotkeyRegistrar {
         )
     }
 
+    private func installSpaceNavigationShortcutHandler() {
+        let selfPointer = Unmanaged.passUnretained(self).toOpaque()
+        iss_set_space_navigation_shortcut_callback(
+            { direction, userData in
+                guard let userData else { return }
+
+                let registrarPointer = UInt(bitPattern: userData)
+                let requestedDirection = direction
+
+                Task { @MainActor in
+                    guard let pointer = UnsafeRawPointer(bitPattern: registrarPointer) else {
+                        return
+                    }
+
+                    let registrar = Unmanaged<SpaceHotkeyRegistrar>
+                        .fromOpaque(pointer)
+                        .takeUnretainedValue()
+                    registrar.handleSpaceNavigationShortcut(direction: requestedDirection)
+                }
+            },
+            selfPointer
+        )
+        iss_set_space_navigation_shortcut_enabled(true)
+    }
+
     @MainActor
     private func handleHotkey(id: UInt32) {
         guard let stableStorageKey = stableKeysByID[id],
@@ -316,6 +353,15 @@ final class SpaceHotkeyRegistrar {
         }
 
         _ = spaceSwitcher.switchToSpace(index + 1, onScreen: 0)
+    }
+
+    @MainActor
+    private func handleSpaceNavigationShortcut(direction: ISSDirection) {
+        if direction == ISSDirectionLeft {
+            _ = spaceSwitcher.switchToPreviousSpace()
+        } else if direction == ISSDirectionRight {
+            _ = spaceSwitcher.switchToNextSpace()
+        }
     }
 
     @MainActor
@@ -354,6 +400,11 @@ private extension NSEvent.ModifierFlags {
 }
 
 extension SpaceHotkey {
+    var isReservedSpaceNavigationShortcut: Bool {
+        modifiers == UInt32(optionKey)
+            && (keyCode == UInt32(kVK_ANSI_A) || keyCode == UInt32(kVK_ANSI_S))
+    }
+
     var menuModifierFlags: NSEvent.ModifierFlags {
         var flags: NSEvent.ModifierFlags = []
 
