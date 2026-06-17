@@ -190,7 +190,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func addSpaceInfoItems(_ snapshot: MenubarSpaceSnapshot, canSwitchSpaces: Bool) {
         let summary = NSMenuItem(
-            title: "Current space: n\(spaceTitle(for: snapshot.currentSpace, spaceNumber: snapshot.currentSpaceNumber))",
+            title: "Current space: \(spaceTitle(for: snapshot.currentSpace, spaceNumber: snapshot.currentSpaceNumber))",
             action: nil,
             keyEquivalent: ""
         )
