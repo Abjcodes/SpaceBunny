@@ -1,2 +1,14 @@
-DerivedData/
 .DS_Store
+
+# Xcode build output
+DerivedData/
+DerivedDataLocal/
+build/
+
+# Xcode local workspace and user state
+*.xcodeproj/project.xcworkspace/
+xcuserdata/
+*.xcuserstate
+
+# Swift Package Manager scratch output
+.build/
