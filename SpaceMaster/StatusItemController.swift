@@ -3,10 +3,12 @@ import AppKit
 @MainActor
 final class StatusItemController: NSObject, NSMenuDelegate {
     private enum Constants {
-        static let appName = "SpaceMaster"
+        static let appName = "SpaceBunny"
         static let unavailableTitle = "Spaces"
         static let renameMenuTitle = "Rename Current Space..."
         static let assignHotkeyMenuTitle = "Assign Hotkey..."
+        static let instantSwipeMenuTitle = "4-Finger Instant Swipe"
+        static let howToUseMenuTitle = "How to Use?"
         static let menuActionDelay = 0.15
         static let autoNameRefreshDelays: [TimeInterval] = [0.2, 0.35, 0.5]
         static let cursorRefreshInterval: TimeInterval = 0.25
@@ -22,6 +24,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     private let titleResolver: SpaceTitleResolver
     private let hotkeyStore: SpaceHotkeyStore
     private let hotkeyRegistrar: SpaceHotkeyRegistrar
+    private let instantSwipeController: FourFingerInstantSwipeController
     private let statusItem: NSStatusItem
     private let menu = NSMenu()
     private let workspaceNotificationCenter = NSWorkspace.shared.notificationCenter
@@ -33,12 +36,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         spaceSwitcher: SpaceSwitching,
         titleResolver: SpaceTitleResolver,
         hotkeyStore: SpaceHotkeyStore,
-        hotkeyRegistrar: SpaceHotkeyRegistrar
+        hotkeyRegistrar: SpaceHotkeyRegistrar,
+        instantSwipeController: FourFingerInstantSwipeController
     ) {
         self.spaceSwitcher = spaceSwitcher
         self.titleResolver = titleResolver
         self.hotkeyStore = hotkeyStore
         self.hotkeyRegistrar = hotkeyRegistrar
+        self.instantSwipeController = instantSwipeController
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         super.init()
 
@@ -107,6 +112,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
 
     private func rebuildMenu() {
         menu.removeAllItems()
+        instantSwipeController.refresh()
         let canSwitchSpaces = spaceSwitcher.isAccessibilityTrusted
         let snapshot = currentSnapshot()
         lastCursorSnapshot = snapshot
@@ -153,10 +159,18 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         }
         menu.addItem(hotkeyItem)
 
+        let instantSwipeItem = menuItem(
+            title: Constants.instantSwipeMenuTitle,
+            action: #selector(toggleInstantSwipe(_:))
+        )
+        instantSwipeItem.state = instantSwipeController.isEnabled ? .on : .off
+        menu.addItem(instantSwipeItem)
+
         menu.addItem(.separator())
+        menu.addItem(menuItem(title: Constants.howToUseMenuTitle, action: #selector(showHowToUseGuide(_:))))
         menu.addItem(menuItem(title: "Refresh", action: #selector(refresh)))
         menu.addItem(.separator())
-        menu.addItem(menuItem(title: "Quit SpaceMaster", action: #selector(quit)))
+        menu.addItem(menuItem(title: "Quit SpaceBunny", action: #selector(quit)))
     }
 
     private func currentSnapshot() -> MenubarSpaceSnapshot? {
@@ -353,7 +367,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         } catch {
             presentWarning(
                 title: "Hotkey Not Saved",
-                message: "SpaceMaster could not save this hotkey."
+                message: "SpaceBunny could not save this hotkey."
             )
             return
         }
@@ -405,6 +419,29 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         alert.informativeText = message
         alert.alertStyle = .warning
         alert.addButton(withTitle: "OK")
+
+        NSApp.activate(ignoringOtherApps: true)
+        alert.runModal()
+    }
+
+    @objc private func toggleInstantSwipe(_ sender: NSMenuItem) {
+        instantSwipeController.toggleEnabled()
+        rebuildMenu()
+    }
+
+    @objc private func showHowToUseGuide(_ sender: NSMenuItem) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + Constants.menuActionDelay) { [weak self] in
+            self?.presentHowToUseGuide()
+        }
+    }
+
+    private func presentHowToUseGuide() {
+        let alert = NSAlert()
+        alert.messageText = "How to Use SpaceBunny"
+        alert.informativeText = "A quick guide to naming, switching, and jumping between your Mac spaces."
+        alert.alertStyle = .informational
+        alert.addButton(withTitle: "Got it")
+        alert.accessoryView = HowToUseGuideView()
 
         NSApp.activate(ignoringOtherApps: true)
         alert.runModal()

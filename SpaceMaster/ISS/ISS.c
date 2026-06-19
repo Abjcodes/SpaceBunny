@@ -14,14 +14,16 @@ static const CGEventField kCGSEventTypeField = (CGEventField)55;
 static const CGEventField kCGEventGestureHIDType = (CGEventField)110;
 static const CGEventField kCGEventGestureScrollY = (CGEventField)119;
 static const CGEventField kCGEventGestureSwipeMotion = (CGEventField)123;
-static const CGEventField kCGEventGestureSwipeProgress = (CGEventField)124;
 static const CGEventField kCGEventGestureSwipeVelocityX = (CGEventField)129;
 static const CGEventField kCGEventGestureSwipeVelocityY = (CGEventField)130;
 static const CGEventField kCGEventGesturePhase = (CGEventField)132;
 static const CGEventField kCGEventScrollGestureFlagBits = (CGEventField)135;
 static const CGEventField kCGEventGestureZoomDeltaX = (CGEventField)139;
+static const CGEventField kCGEventSyntheticMarker = (CGEventField)200;
+static const int64_t kSyntheticMarkerValue = 0x535357495045LL;
 static const int64_t kISSVirtualKeyANSI_A = 0x00;
 static const int64_t kISSVirtualKeyANSI_S = 0x01;
+static const double kISSInstantGestureVelocity = 999999.0;
 
 // See IOHIDEventType enum in IOHIDFamily
 static const uint32_t kIOHIDEventTypeDockSwipe = 23;
@@ -75,6 +77,8 @@ static bool load_space_snapshot_for_display(ISSSpaceSnapshot *outSnapshot,
                                             bool useCursorDisplay);
 static bool load_space_info_for_display(ISSSpaceInfo *info, bool useCursorDisplay);
 static bool iss_post_switch_gesture(ISSDirection direction);
+static bool iss_post_dock_swipe_phase(CGSGesturePhase phase, ISSDirection direction, double velocity);
+static int64_t iss_dock_swipe_flag_bits(ISSDirection direction);
 static bool iss_switch_with_info(const ISSSpaceInfo *info, ISSDirection direction);
 static bool iss_switch_to_index_with_info(const ISSSpaceInfo *info, unsigned int targetIndex);
 static bool iss_should_block_switch(const ISSSpaceInfo *info, ISSDirection direction);
@@ -401,77 +405,59 @@ void iss_set_space_navigation_shortcut_enabled(bool enabled) {
 }
 
 static bool iss_post_switch_gesture(ISSDirection direction) {
+    return iss_post_dock_swipe_phase(kCGSGesturePhaseBegan, direction, kISSInstantGestureVelocity) &&
+           iss_post_dock_swipe_phase(kCGSGesturePhaseChanged, direction, kISSInstantGestureVelocity) &&
+           iss_post_dock_swipe_phase(kCGSGesturePhaseEnded, direction, kISSInstantGestureVelocity);
+}
+
+static bool iss_post_dock_swipe_phase(CGSGesturePhase phase, ISSDirection direction, double velocity) {
     const bool isRight = (direction == ISSDirectionRight);
+    const double velocityX = isRight ? velocity : -velocity;
+    const int64_t flagBits = iss_dock_swipe_flag_bits(direction);
 
-    // ScrollGestureFlagBits seem to mark direction (anything non-zero)
-    int32_t scrollGestureFlagDirection = isRight ? 1 : 0;
-
-    // Corresponds to distance, or something along those lines
-    const double swipeProgress = isRight ? 2.0 : -2.0;
-
-    // self-explanatory
-    const double swipeVelocity = isRight ? 400.0 : -400.0;
-
-    //
-    // -- Begin gesture --
-    //
-    CGEventRef evA = CGEventCreate(NULL);
-    if (!evA) {
+    CGEventRef gestureEvent = CGEventCreate(NULL);
+    if (!gestureEvent) {
         return false;
     }
-    CGEventSetIntegerValueField(evA, kCGSEventTypeField, kCGSEventGesture);
 
-    CGEventRef evB = CGEventCreate(NULL);
-    if (!evB) {
-        CFRelease(evA);
+    CGEventRef dockEvent = CGEventCreate(NULL);
+    if (!dockEvent) {
+        CFRelease(gestureEvent);
         return false;
     }
-    CGEventSetIntegerValueField(evB, kCGSEventTypeField, kCGSEventDockControl);
-    CGEventSetIntegerValueField(evB, kCGEventGestureHIDType, kIOHIDEventTypeDockSwipe);
-    CGEventSetIntegerValueField(evB, kCGEventGesturePhase, kCGSGesturePhaseBegan);
-    CGEventSetIntegerValueField(evB, kCGEventScrollGestureFlagBits, scrollGestureFlagDirection);
-    CGEventSetIntegerValueField(evB, kCGEventGestureSwipeMotion, kCGGestureMotionHorizontal);
-    CGEventSetDoubleValueField(evB, kCGEventGestureScrollY, 0);
-    // Cannot explain this
-    CGEventSetDoubleValueField(evB, kCGEventGestureZoomDeltaX, FLT_TRUE_MIN);
 
-    CGEventPost(kCGSessionEventTap, evB);
-    CGEventPost(kCGSessionEventTap, evA);
-    CFRelease(evA);
-    CFRelease(evB);
+    CGEventSetIntegerValueField(gestureEvent, kCGSEventTypeField, kCGSEventGesture);
+    CGEventSetIntegerValueField(gestureEvent, kCGEventSyntheticMarker, kSyntheticMarkerValue);
 
-    //
-    // -- End gesture --
-    //
-    evA = CGEventCreate(NULL);
-    if (!evA) {
-        return false;
-    }
-    CGEventSetIntegerValueField(evA, kCGSEventTypeField, kCGSEventGesture);
+    CGEventSetIntegerValueField(dockEvent, kCGSEventTypeField, kCGSEventDockControl);
+    CGEventSetIntegerValueField(dockEvent, kCGEventGestureHIDType, kIOHIDEventTypeDockSwipe);
+    CGEventSetIntegerValueField(dockEvent, kCGEventGesturePhase, phase);
+    CGEventSetIntegerValueField(dockEvent, kCGEventScrollGestureFlagBits, flagBits);
+    CGEventSetIntegerValueField(dockEvent, kCGEventGestureSwipeMotion, kCGGestureMotionHorizontal);
+    CGEventSetDoubleValueField(dockEvent, kCGEventGestureScrollY, 0);
+    CGEventSetDoubleValueField(dockEvent, kCGEventGestureSwipeVelocityX, velocityX);
+    CGEventSetDoubleValueField(dockEvent, kCGEventGestureSwipeVelocityY, 0);
+    CGEventSetDoubleValueField(dockEvent, kCGEventGestureZoomDeltaX, FLT_TRUE_MIN);
+    CGEventSetIntegerValueField(dockEvent, kCGEventSyntheticMarker, kSyntheticMarkerValue);
 
-    evB = CGEventCreate(NULL);
-    if (!evB) {
-        CFRelease(evA);
-        return false;
-    }
-    CGEventSetIntegerValueField(evB, kCGSEventTypeField, kCGSEventDockControl);
-    CGEventSetIntegerValueField(evB, kCGEventGestureHIDType, kIOHIDEventTypeDockSwipe);
-    CGEventSetIntegerValueField(evB, kCGEventGesturePhase, kCGSGesturePhaseEnded);
-    CGEventSetDoubleValueField(evB, kCGEventGestureSwipeProgress, swipeProgress);
-    CGEventSetIntegerValueField(evB, kCGEventScrollGestureFlagBits, scrollGestureFlagDirection);
-    CGEventSetIntegerValueField(evB, kCGEventGestureSwipeMotion, kCGGestureMotionHorizontal);
-    CGEventSetDoubleValueField(evB, kCGEventGestureScrollY, 0);
-    CGEventSetDoubleValueField(evB, kCGEventGestureSwipeVelocityX, swipeVelocity);
-    CGEventSetDoubleValueField(evB, kCGEventGestureSwipeVelocityY, 0);
-    // Cannot explain this
-    CGEventSetDoubleValueField(evB, kCGEventGestureZoomDeltaX, FLT_TRUE_MIN);
+    CGEventPost(kCGSessionEventTap, dockEvent);
+    CGEventPost(kCGSessionEventTap, gestureEvent);
 
-    CGEventPost(kCGSessionEventTap, evB);
-    CGEventPost(kCGSessionEventTap, evA);
-    CFRelease(evA);
-    CFRelease(evB);
+    CFRelease(gestureEvent);
+    CFRelease(dockEvent);
 
     return true;
+}
+
+static int64_t iss_dock_swipe_flag_bits(ISSDirection direction) {
+    float flagsProgress = FLT_TRUE_MIN;
+    if (direction == ISSDirectionLeft) {
+        flagsProgress = -flagsProgress;
+    }
+
+    int32_t bits = 0;
+    memcpy(&bits, &flagsProgress, sizeof(bits));
+    return (int64_t)bits;
 }
 
 bool iss_init(void) {

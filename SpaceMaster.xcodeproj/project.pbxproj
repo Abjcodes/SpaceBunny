@@ -16,6 +16,11 @@
 		5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */; };
 		5C39214D2FC8748F00A4A501 /* SpaceNaming.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */; };
 		5C3921552FC8748F00A4A501 /* SpaceHotkeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */; };
+		5C3921612FE3C6E200A4A501 /* HowToUseGuideView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921602FE3C6E200A4A501 /* HowToUseGuideView.swift */; };
+		5C3921622FE4A00000A4A501 /* EventTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921632FE4A00000A4A501 /* EventTap.swift */; };
+		5C3921642FE4A00000A4A501 /* SwipeGestureMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921652FE4A00000A4A501 /* SwipeGestureMonitor.swift */; };
+		5C3921662FE4A00000A4A501 /* SystemSwipeSuppressor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921672FE4A00000A4A501 /* SystemSwipeSuppressor.swift */; };
+		5C3921682FE4A00000A4A501 /* FourFingerInstantSwipeController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C3921692FE4A00000A4A501 /* FourFingerInstantSwipeController.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -32,6 +37,11 @@
 		5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FullScreenSpaceNameDetector.swift; sourceTree = "<group>"; };
 		5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceNaming.swift; sourceTree = "<group>"; };
 		5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpaceHotkeys.swift; sourceTree = "<group>"; };
+		5C3921602FE3C6E200A4A501 /* HowToUseGuideView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HowToUseGuideView.swift; sourceTree = "<group>"; };
+		5C3921632FE4A00000A4A501 /* EventTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventTap.swift; sourceTree = "<group>"; };
+		5C3921652FE4A00000A4A501 /* SwipeGestureMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SwipeGestureMonitor.swift; sourceTree = "<group>"; };
+		5C3921672FE4A00000A4A501 /* SystemSwipeSuppressor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemSwipeSuppressor.swift; sourceTree = "<group>"; };
+		5C3921692FE4A00000A4A501 /* FourFingerInstantSwipeController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FourFingerInstantSwipeController.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +88,11 @@
 				5C3921322FC8748F00A4A501 /* SpaceSwitching.swift */,
 				5C3921332FC8748F00A4A501 /* SpaceManager.swift */,
 				5C3921342FC8748F00A4A501 /* StatusItemController.swift */,
+				5C3921602FE3C6E200A4A501 /* HowToUseGuideView.swift */,
+				5C3921632FE4A00000A4A501 /* EventTap.swift */,
+				5C3921652FE4A00000A4A501 /* SwipeGestureMonitor.swift */,
+				5C3921672FE4A00000A4A501 /* SystemSwipeSuppressor.swift */,
+				5C3921692FE4A00000A4A501 /* FourFingerInstantSwipeController.swift */,
 				5C39214A2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift */,
 				5C39214C2FC8748F00A4A501 /* SpaceNaming.swift */,
 				5C3921542FC8748F00A4A501 /* SpaceHotkeys.swift */,
@@ -201,6 +216,11 @@
 				5C39213D2FC8748F00A4A501 /* SpaceSwitching.swift in Sources */,
 				5C39213E2FC8748F00A4A501 /* SpaceManager.swift in Sources */,
 				5C39213F2FC8748F00A4A501 /* StatusItemController.swift in Sources */,
+				5C3921612FE3C6E200A4A501 /* HowToUseGuideView.swift in Sources */,
+				5C3921622FE4A00000A4A501 /* EventTap.swift in Sources */,
+				5C3921642FE4A00000A4A501 /* SwipeGestureMonitor.swift in Sources */,
+				5C3921662FE4A00000A4A501 /* SystemSwipeSuppressor.swift in Sources */,
+				5C3921682FE4A00000A4A501 /* FourFingerInstantSwipeController.swift in Sources */,
 				5C39214B2FC8748F00A4A501 /* FullScreenSpaceNameDetector.swift in Sources */,
 				5C39214D2FC8748F00A4A501 /* SpaceNaming.swift in Sources */,
 				5C3921552FC8748F00A4A501 /* SpaceHotkeys.swift in Sources */,

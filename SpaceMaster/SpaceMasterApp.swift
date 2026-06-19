@@ -7,11 +7,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let titleResolver = SpaceTitleResolver()
     private let hotkeyStore = SpaceHotkeyStore()
     private var hotkeyRegistrar: SpaceHotkeyRegistrar?
+    private var instantSwipeController: FourFingerInstantSwipeController?
     private var statusItemController: StatusItemController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.accessory)
         spaceSwitcher.initialize()
+        let instantSwipeController = FourFingerInstantSwipeController(
+            spaceSwitcher: spaceSwitcher
+        )
+        self.instantSwipeController = instantSwipeController
         let hotkeyRegistrar = SpaceHotkeyRegistrar(
             store: hotkeyStore,
             spaceSwitcher: spaceSwitcher
@@ -22,11 +27,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             spaceSwitcher: spaceSwitcher,
             titleResolver: titleResolver,
             hotkeyStore: hotkeyStore,
-            hotkeyRegistrar: hotkeyRegistrar
+            hotkeyRegistrar: hotkeyRegistrar,
+            instantSwipeController: instantSwipeController
         )
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        instantSwipeController?.stop()
         spaceSwitcher.destroy()
     }
 }
